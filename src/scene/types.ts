@@ -55,6 +55,9 @@ export interface SceneMeta {
   tokenColors: TokenColorRule[];
   showExplorer: boolean;
   showScm: boolean;
+  minimap: boolean;
+  tabSize: number;
+  wordWrap: boolean;
   /** Every tracked path at the start of the range. */
   initialFiles: string[];
   initialSidebar: SidebarView;

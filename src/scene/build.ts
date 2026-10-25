@@ -50,6 +50,8 @@ export interface BuildSceneOptions {
   typing: TypingOptions;
   introMs: number;
   outroMs: number;
+  /** Compress the finished timeline if it exceeds this length. */
+  maxDurationMs?: number;
 }
 
 interface FileVersion {
@@ -61,16 +63,16 @@ interface FileVersion {
 }
 
 const CHROME = {
-  openFile: 420,
-  quickOpenPerChar: 18,
-  quickOpenMin: 180,
-  quickOpenMax: 700,
-  expand: 160,
-  blockPause: 420,
-  scroll: 300,
-  cursor: 120,
-  save: 260,
-  structural: 460,
+  openFile: 380,
+  quickOpenPerChar: 16,
+  quickOpenMin: 160,
+  quickOpenMax: 600,
+  expand: 140,
+  blockPause: 300,
+  scroll: 220,
+  cursor: 90,
+  save: 220,
+  structural: 420,
 };
 
 function advancePosition(position: CursorPosition, text: string): CursorPosition {
@@ -145,8 +147,11 @@ class SceneBuilder {
     }
     this.advance(this.options.outroMs);
 
-    const scaled = this.scaleEvents();
-    const durationMs = Math.round(this.now / this.speed);
+    const maxDuration = this.options.maxDurationMs ?? 150_000;
+    const requiredSpeed = maxDuration > 0 ? this.now / maxDuration : 0;
+    const effectiveSpeed = Math.max(this.speed, requiredSpeed);
+    const scaled = this.scaleEvents(effectiveSpeed);
+    const durationMs = Math.round(this.now / effectiveSpeed);
 
     const meta: SceneMeta = {
       width: this.options.width,
@@ -167,6 +172,9 @@ class SceneBuilder {
       tokenColors: this.options.environment.theme.tokenColors,
       showExplorer: this.options.showExplorer,
       showScm: this.options.showScm,
+      minimap: this.options.environment.resolvedSettings.minimap,
+      tabSize: this.options.environment.resolvedSettings.tabSize,
+      wordWrap: this.options.environment.resolvedSettings.wordWrap,
       initialFiles,
       initialSidebar: this.options.showExplorer ? 'explorer' : null,
       initialTabs: [],
@@ -195,8 +203,8 @@ class SceneBuilder {
     };
   }
 
-  private scaleEvents(): SceneEvent[] {
-    const scale = 1 / this.speed;
+  private scaleEvents(speed: number): SceneEvent[] {
+    const scale = 1 / speed;
     const scaled = this.events.map((event) => {
       const next: SceneEvent = {
         ...event,
@@ -244,6 +252,9 @@ class SceneBuilder {
 
     if (this.options.showExplorer) this.setSidebar('explorer');
     else this.setSidebar(null);
+
+    this.push({ type: 'scm-set', entries: scmEntries });
+    this.advance(180);
 
     const ordered = [...files].sort((a, b) => a.path.localeCompare(b.path));
     for (const file of ordered) {
@@ -455,13 +466,15 @@ class SceneBuilder {
     const plans = planFileEdits(splitLines(oldText), splitLines(newText));
     if (plans.length === 0) return;
 
-    await this.openFile(path);
-    this.registerFile(path);
-
+    // Load the base contents before the tab is created so the first painted
+    // frame of the file is never empty.
     if (!wasOpen || previous !== oldText) {
       this.push({ type: 'file-content', path, text: oldText });
     }
     this.docs.set(path, oldText);
+
+    await this.openFile(path);
+    this.registerFile(path);
 
     for (const block of plans) {
       this.push({ type: 'scroll', path, line: block.scrollLine });
@@ -552,7 +565,7 @@ class SceneBuilder {
         insertText: text,
         cursorAfter: edit.cursorAfter,
       });
-      this.advance(180);
+      this.advance(60);
       return;
     }
 
@@ -571,7 +584,7 @@ class SceneBuilder {
           col += indent.length;
           segment = segment.slice(indent.length);
           chars = Array.from(segment);
-          this.advance(40);
+          this.advance(15);
         }
       }
 
@@ -580,7 +593,7 @@ class SceneBuilder {
           const remaining = chars.slice(index).join('') + (segmentIndex < segments.length - 1 ? '\n' + segments.slice(segmentIndex + 1).join('\n') : '');
           const cursorAfter = advancePosition({ line, col }, remaining);
           this.push({ type: 'edit', path, line, col, insertText: remaining, cursorAfter });
-          this.advance(200);
+          this.advance(10);
           return;
         }
         const char = chars[index]!;
@@ -596,7 +609,7 @@ class SceneBuilder {
         this.push({ type: 'edit', path, line, col, insertText: '\n', cursorAfter: cursor });
         line += 1;
         col = 0;
-        this.advance(jitter(this.rng, 90, 50));
+        this.advance(jitter(this.rng, 30, 25));
       }
     }
   }
@@ -639,8 +652,14 @@ class SceneBuilder {
     await this.ensureExplorer();
     this.expandDirs(ancestorsOf(from));
     this.expandDirs(ancestorsOf(to));
-    this.push({ type: 'rename', from, to, via });
-    this.advance(CHROME.structural);
+    this.push({
+      type: 'rename',
+      from,
+      to,
+      via,
+      until: this.now + 420,
+    });
+    this.advance(450);
     if (previous !== 'explorer' && previous !== null) {
       this.setSidebar(previous);
     } else if (previous === null) {
@@ -694,13 +713,18 @@ class SceneBuilder {
 
   private async commitMoment(commit: CommitInfo, entries: ScmEntry[]): Promise<void> {
     if (!this.options.showScm) {
+      this.push({
+        type: 'commit',
+        sha: commit.sha,
+        subject: commit.subject,
+        author: commit.author,
+      });
+      this.advance(350);
       this.toast(`Committed ${commit.shortSha} — ${commit.subject}`, 1800);
       return;
     }
 
     this.setSidebar('scm');
-    this.push({ type: 'scm-set', entries });
-    this.advance(600);
     this.push({
       type: 'scm-set',
       entries: entries.map((entry) => ({ ...entry, staged: true })),
