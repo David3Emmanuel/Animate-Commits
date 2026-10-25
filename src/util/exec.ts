@@ -61,3 +61,36 @@ export async function commandExists(command: string): Promise<boolean> {
     return false;
   }
 }
+
+export function execBuffer(
+  file: string,
+  args: string[],
+  options: { cwd?: string; maxBuffer?: number } = {},
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      file,
+      args,
+      {
+        cwd: options.cwd,
+        encoding: 'buffer',
+        maxBuffer: options.maxBuffer ?? 128 * 1024 * 1024,
+        windowsHide: true,
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(
+            new CommandError(
+              `${file} ${args.join(' ')} failed: ${error.message}`,
+              `${file} ${args.join(' ')}`,
+              error.code ?? null,
+              stderr?.toString() ?? '',
+            ),
+          );
+          return;
+        }
+        resolve(stdout);
+      },
+    );
+  });
+}
