@@ -29,7 +29,7 @@ export function registerRenderCommand(program: Command): void {
     .command('render <repo>')
     .description('Animate a commit or range and export an MP4 (or PNG frames).')
     .option('--out <file>', 'output MP4 path')
-    .option('--fps <n>', 'frames per second', '30')
+    .option('--fps <n>', 'frames per second', '20')
     .option('--size <WxH>', 'window size in CSS pixels', '1280x800')
     .option('--scale <n>', 'device pixel ratio for the capture', '1')
     .option('--frames <dir>', 'write PNG frames instead of an MP4')
@@ -40,7 +40,7 @@ export function registerRenderCommand(program: Command): void {
   addSceneOptions(command);
 
   command.action(async (repo: string, options: RenderOptions) => {
-    const fps = Number(options.fps ?? 30);
+    const fps = Number(options.fps ?? 20);
     if (!Number.isFinite(fps) || fps < 1 || fps > 120) {
       throw new Error('--fps must be between 1 and 120.');
     }

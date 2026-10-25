@@ -121,7 +121,7 @@ Options shared by `render` and `preview`:
 | Option | Default | Description |
 | --- | --- | --- |
 | `--out <file>` | `out/<repo>-<sha>.mp4` | Output MP4 |
-| `--fps <n>` | `30` | Frame rate |
+| `--fps <n>` | `20` | Frame rate |
 | `--size <WxH>` | `1280x800` | Window size in CSS pixels |
 | `--scale <n>` | `1` | Device pixel ratio of the capture |
 | `--frames <dir>` | — | Write PNG frames instead of an MP4 |
