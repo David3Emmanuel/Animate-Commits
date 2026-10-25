@@ -105,7 +105,7 @@ Options shared by `render` and `preview`:
 | `--scm` | off | Show the Source Control commit flow |
 | `--merges` | off | Include merge commits (diffed against the first parent) |
 | `--ignore <glob>` | — | Exclude paths from the animation (repeatable) |
-| `--speed <x>` | `1` | Timing multiplier; `2` is twice as fast |
+| `--speed <x>` | `0.6` | Timing multiplier; `0.6` is slower, `2` is twice as fast |
 | `--typing <ms>` | `42` | Base delay per typed character |
 | `--max-typed <n>` | `1200` | Characters typed per commit before bulk insertion |
 | `--instant` | off | Insert changes without per-character typing |

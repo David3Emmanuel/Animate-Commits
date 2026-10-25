@@ -4,6 +4,7 @@ import type { DocState, RenderState } from './state';
 import { activeDoc } from './state';
 import type { Shell } from './shell';
 import { basename, clamp, fileIconColor, h, icon } from './dom';
+import { fitTopLine } from './viewport';
 
 let lastTabsSignature = '';
 let lastBreadcrumbSignature = '';
@@ -235,7 +236,7 @@ export function renderEditor(shell: Shell, state: RenderState, highlighter: High
   const lineHeight = meta.fonts.lineHeight;
   const height = shell.editor.clientHeight || 500;
   const visibleCount = Math.max(1, Math.ceil(height / lineHeight) + 2);
-  const topLine = clamp(doc.scrollLine - Math.floor(visibleCount / 3), 0, Math.max(0, doc.lines.length - 1));
+  const topLine = fitTopLine(doc.scrollLine, doc.cursor.line, doc.lines.length, visibleCount);
   const scope = meta.grammarScopes[doc.path];
   const highlighted = highlighter.highlight(doc.path, scope, doc.text);
   const selection = normalizedSelection(doc);

@@ -50,7 +50,7 @@ export function addSceneOptions(command: Command): Command {
     .option('--max-file-lines <n>', 'do not animate files longer than this', '4000')
     .option('--max-tabs <n>', 'maximum open editor tabs', '8')
     .option('--ignore <glob>', 'exclude paths from the animation (repeatable)', collect, [])
-    .option('--speed <x>', 'timing multiplier (2 = twice as fast)', '1')
+    .option('--speed <x>', 'timing multiplier (0.6 = slower, 2 = twice as fast)', '0.6')
     .option('--typing <ms>', 'base milliseconds per typed character', '42')
     .option('--seed <n>', 'seed for deterministic typing jitter')
     .option('--instant', 'insert changes without per-character typing')
@@ -124,7 +124,7 @@ export async function prepareScene(
 
   const platform = resolvePlatform(options.titlebar);
   const baseMs = positiveNumber(options.typing, 42, '--typing');
-  const speed = positiveNumber(options.speed, 1, '--speed');
+  const speed = positiveNumber(options.speed, 0.6, '--speed');
   const introMs = positiveNumber(options.intro, 700, '--intro');
   const outroMs = positiveNumber(options.hold, 1400, '--hold');
   const maxFileLines = positiveNumber(options.maxFileLines, 4000, '--max-file-lines');
