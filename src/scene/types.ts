@@ -69,6 +69,12 @@ export interface SceneMeta {
   grammarScopes: Record<string, string>;
   languages: Record<string, string>;
   warnings: string[];
+  /** Present only when --max-duration shortened the timeline beyond --speed. */
+  compression?: {
+    requestedSpeed: number;
+    effectiveSpeed: number;
+    maxDurationMs: number;
+  };
 }
 
 interface EventBase {

@@ -278,6 +278,30 @@ describe('scene builder', () => {
     expect(scm?.entries.some((entry) => entry.path === 'image.bin')).toBe(true);
   });
 
+  it('only compresses the timeline when --max-duration is provided', async () => {
+    const commits = await resolveCommits(fixture.repo, { commit: fixture.first });
+    const base = await buildScene(baseOptions(fixture, commits));
+
+    const slow = await buildScene(
+      baseOptions(fixture, commits, {
+        typing: { baseMs: 5, jitterMs: 0, speed: 0.5, seed: 42, noTyping: false, budget: 500 },
+      }),
+    );
+    expect(slow.meta.compression).toBeUndefined();
+    expect(slow.durationMs).toBeGreaterThan(base.durationMs);
+
+    const capped = await buildScene(
+      baseOptions(fixture, commits, {
+        typing: { baseMs: 5, jitterMs: 0, speed: 0.5, seed: 42, noTyping: false, budget: 500 },
+        maxDurationMs: 2000,
+      }),
+    );
+    expect(capped.durationMs).toBeLessThanOrEqual(2000);
+    expect(capped.meta.compression).toBeDefined();
+    expect(capped.meta.compression!.effectiveSpeed).toBeGreaterThan(0.5);
+    expect(capped.meta.compression!.requestedSpeed).toBe(0.5);
+  });
+
   afterAll(() => {
     if (fixture) rmSync(fixture.dir, { recursive: true, force: true });
   });

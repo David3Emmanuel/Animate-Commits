@@ -147,11 +147,24 @@ class SceneBuilder {
     }
     this.advance(this.options.outroMs);
 
-    const maxDuration = this.options.maxDurationMs ?? 150_000;
-    const requiredSpeed = maxDuration > 0 ? this.now / maxDuration : 0;
+    // --speed is authoritative. --max-duration is an explicit safety cap and
+    // only ever shortens the timeline when the caller asks for it.
+    const maxDuration =
+      this.options.maxDurationMs && this.options.maxDurationMs > 0
+        ? this.options.maxDurationMs
+        : undefined;
+    const requiredSpeed = maxDuration ? this.now / maxDuration : 0;
     const effectiveSpeed = Math.max(this.speed, requiredSpeed);
     const scaled = this.scaleEvents(effectiveSpeed);
     const durationMs = Math.round(this.now / effectiveSpeed);
+    const compression =
+      effectiveSpeed > this.speed + 1e-9
+        ? {
+            requestedSpeed: this.speed,
+            effectiveSpeed,
+            maxDurationMs: maxDuration!,
+          }
+        : undefined;
 
     const meta: SceneMeta = {
       width: this.options.width,
@@ -184,6 +197,7 @@ class SceneBuilder {
       grammarScopes: Object.fromEntries(this.grammarScopes),
       languages: Object.fromEntries(this.languages),
       warnings: [...this.warnings],
+      ...(compression ? { compression } : {}),
     };
 
     return {

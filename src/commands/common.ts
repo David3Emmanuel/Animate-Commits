@@ -56,7 +56,7 @@ export function addSceneOptions(command: Command): Command {
     .option('--instant', 'insert changes without per-character typing')
     .option('--intro <ms>', 'pause before the first action', '700')
     .option('--hold <ms>', 'pause on the final frame', '1400')
-    .option('--max-duration <seconds>', 'compress the timeline if it runs longer than this', '180')
+    .option('--max-duration <seconds>', 'explicit safety cap; shortens the timeline and overrides --speed (0 = off)', '0')
     .option('--max-typed <chars>', 'characters typed per commit before switching to bulk insert', '1200');
 }
 
@@ -87,6 +87,15 @@ function positiveNumber(value: string | undefined, fallback: number, label: stri
   if (value === undefined) return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${label} must be a positive number.`);
+  return parsed;
+}
+
+function nonNegativeNumber(value: string | undefined, fallback: number, label: string): number {
+  if (value === undefined) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${label} must be zero or a positive number.`);
+  }
   return parsed;
 }
 
@@ -129,7 +138,7 @@ export async function prepareScene(
   const outroMs = positiveNumber(options.hold, 1400, '--hold');
   const maxFileLines = positiveNumber(options.maxFileLines, 4000, '--max-file-lines');
   const maxTabs = positiveNumber(options.maxTabs, 8, '--max-tabs');
-  const maxDuration = positiveNumber(options.maxDuration, 180, '--max-duration');
+  const maxDurationSeconds = nonNegativeNumber(options.maxDuration, 0, '--max-duration');
   const maxTyped = positiveNumber(options.maxTyped, 1200, '--max-typed');
 
   const scene = await buildScene({
@@ -156,7 +165,7 @@ export async function prepareScene(
     },
     introMs,
     outroMs,
-    maxDurationMs: maxDuration * 1000,
+    ...(maxDurationSeconds > 0 ? { maxDurationMs: maxDurationSeconds * 1000 } : {}),
   });
 
   console.error(
@@ -164,6 +173,17 @@ export async function prepareScene(
       scene.durationMs / 1000
     ).toFixed(1)}s, ${scene.events.length} events${options.instant ? ' (instant mode)' : ''}`,
   );
+  if (scene.meta.compression) {
+    console.error(
+      `[scene] --max-duration compressed the timeline: speed ${scene.meta.compression.requestedSpeed}× → ` +
+        `${scene.meta.compression.effectiveSpeed.toFixed(2)}×. Remove --max-duration to keep the requested pace.`,
+    );
+  } else if (scene.durationMs > 300_000) {
+    console.error(
+      `[scene] warning: this animation is ${(scene.durationMs / 60_000).toFixed(1)} minutes. ` +
+        'Use a shorter --range, a higher --speed, or an explicit --max-duration to shorten it.',
+    );
+  }
   for (const warning of scene.meta.warnings) console.error(`[skip] ${warning}`);
 
   const grammars = new GrammarRegistry(

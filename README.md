@@ -112,7 +112,7 @@ Options shared by `render` and `preview`:
 | `--seed <n>` | derived | Seed for deterministic typing jitter |
 | `--intro <ms>` | `700` | Pause before the first action |
 | `--hold <ms>` | `1400` | Pause on the final frame |
-| `--max-duration <seconds>` | `180` | Compress the timeline if it runs longer |
+| `--max-duration <seconds>` | `0` (off) | Explicit safety cap; overrides `--speed` if the timeline runs longer |
 | `--max-file-lines <n>` | `4000` | Files longer than this are shown as status-only changes |
 | `--max-tabs <n>` | `8` | Maximum open editor tabs |
 
@@ -131,11 +131,23 @@ Options shared by `render` and `preview`:
 
 `preview` adds `--open`.
 
+### Pacing
+
+- **`--speed`** is the pacing control applied by default. `0.6` is slower than real time; `--speed 1`
+  restores the original pacing and `--speed 2` halves the duration.
+- **`--max-duration`** is off by default. When you pass it, the whole timeline is compressed to fit,
+  which can raise the effective speed above `--speed`; the CLI prints a warning with the effective
+  multiplier. It never kicks in on its own.
+- **`--max-typed`** caps character-by-character typing per commit. Past that point the remaining
+  lines are inserted in bulk, which is a deliberate change of pace for very large diffs. Raise it for
+  more typing, lower it for shorter videos, or use `--instant` to skip typing entirely.
+- The preview's 0.5×–4× selector changes playback only; it does not alter an exported video.
+
 ## How it works
 
 1. **Read history.** Commits are resolved with `git rev-list`, changes with
    `git diff --name-status -M`, and file contents with `git cat-file`. Root commits diff against the
-   empty tree; merge commits are skipped unless `--range` asks for them.
+   empty tree; merge commits are skipped unless `--merges` is passed.
 2. **Resolve VS Code.** The active color theme is looked up in the installed built-in and user
    extension themes, including localized label keys and `include` chains. Workbench colors, token
    colors, fonts, tab size, and minimap settings are merged from defaults, user settings, and the
