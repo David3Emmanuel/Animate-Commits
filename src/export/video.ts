@@ -19,6 +19,8 @@ export interface RenderSceneOptions {
   framesDir?: string;
   browserExe?: string;
   ffmpegPath?: string;
+  /** Reuse the previous capture when the visible state is unchanged. */
+  dedupe?: boolean;
   signal?: AbortSignal;
   onProgress?: (frame: number, total: number) => void;
 }
@@ -89,15 +91,26 @@ export async function renderScene(options: RenderSceneOptions): Promise<void> {
 
     const totalFrames = Math.max(1, Math.ceil((options.scene.durationMs / 1000) * options.fps) + 1);
     const startedAt = Date.now();
+    let lastSignature = '';
+    let lastPng: Buffer | undefined;
+    let capturedFrames = 0;
     for (let frame = 0; frame < totalFrames; frame++) {
       if (options.signal?.aborted) throw new Error('Rendering cancelled.');
       const time = Math.min((frame / options.fps) * 1000, Math.max(0, options.scene.durationMs - 1));
-      await page.evaluate((value) => {
-        const api = window as { __seek?: (time: number) => void };
+      const signature = await page.evaluate((value) => {
+        const api = window as { __seek?: (time: number) => string };
         if (!api.__seek) throw new Error('Renderer is not ready.');
-        api.__seek(value);
+        return api.__seek(value);
       }, time);
-      const png = await page.screenshot({ type: 'png', animations: 'disabled' });
+      let png: Buffer;
+      if (options.dedupe !== false && signature && signature === lastSignature && lastPng) {
+        png = lastPng;
+      } else {
+        png = await page.screenshot({ type: 'png' });
+        lastPng = png;
+        lastSignature = signature;
+        capturedFrames++;
+      }
       if (options.framesDir) {
         const name = `frame-${String(frame + 1).padStart(5, '0')}.png`;
         writeFileSync(join(options.framesDir, name), png);
@@ -114,10 +127,13 @@ export async function renderScene(options: RenderSceneOptions): Promise<void> {
     }
 
     if (options.framesDir) {
-      console.error(`[render] wrote ${totalFrames} PNG frames to ${options.framesDir}`);
+      console.error(
+        `[render] wrote ${totalFrames} PNG frames (${capturedFrames} captures) to ${options.framesDir}`,
+      );
     } else if (encoder) {
       encoder.stdin.end();
       await encoder.done;
+      console.error(`[render] captured ${capturedFrames}/${totalFrames} frames`);
     }
   } finally {
     if (encoder) encoder.kill();

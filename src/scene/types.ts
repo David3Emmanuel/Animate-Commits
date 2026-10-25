@@ -241,7 +241,7 @@ export type SceneEventInput = SceneEvent extends infer Event
 
 export interface RendererWindow {
   __scene?: Scene;
-  __seek?: (timeMs: number) => void;
+  __seek?: (timeMs: number) => string;
   __ready?: boolean;
   __duration?: number;
 }

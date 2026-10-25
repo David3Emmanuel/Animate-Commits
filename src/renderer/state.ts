@@ -48,6 +48,8 @@ export interface RenderState {
   lastCursorActivity: number;
   lastEventIndex: number;
   events: SceneEvent[];
+  /** Increments whenever the file tree or its expansion changes. */
+  treeVersion: number;
 }
 
 export function createDoc(path: string, text: string): DocState {
@@ -147,6 +149,7 @@ export function applyEvent(state: RenderState, event: SceneEvent): void {
       break;
     case 'expand':
       for (const dir of event.dirs) state.expanded.add(dir);
+      state.treeVersion++;
       break;
     case 'quickopen':
       state.overlays.quickopen = event;
@@ -162,6 +165,7 @@ export function applyEvent(state: RenderState, event: SceneEvent): void {
       break;
     case 'create':
       state.files.add(event.path);
+      state.treeVersion++;
       break;
     case 'delete': {
       for (const path of [...state.files]) {
@@ -169,11 +173,13 @@ export function applyEvent(state: RenderState, event: SceneEvent): void {
       }
       state.docs.delete(event.path);
       closeDocTab(state, event.path);
+      state.treeVersion++;
       break;
     }
     case 'rename':
       movePath(state, event.from, event.to);
       if (event.until !== undefined) state.overlays.rename = event;
+      state.treeVersion++;
       break;
     case 'cursor': {
       const doc = ensureDoc(state, event.path);
@@ -247,6 +253,7 @@ export function resetState(state: RenderState): void {
   state.overlays = {};
   state.lastCursorActivity = 0;
   state.lastEventIndex = 0;
+  state.treeVersion = 0;
 }
 
 export function createState(scene: Scene): RenderState {
@@ -266,6 +273,7 @@ export function createState(scene: Scene): RenderState {
     lastCursorActivity: 0,
     lastEventIndex: 0,
     events: scene.events,
+    treeVersion: 0,
   };
   resetState(state);
   return state;

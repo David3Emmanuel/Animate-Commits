@@ -127,6 +127,7 @@ Options shared by `render` and `preview`:
 | `--frames <dir>` | — | Write PNG frames instead of an MP4 |
 | `--ffmpeg <path>` | PATH | ffmpeg executable |
 | `--browser-exe <path>` | auto | Chromium-based browser executable |
+| `--capture-all` | off | Capture every frame even when the visible state is unchanged (debugging) |
 | `--dump-scene <file>` | — | Write the generated scene JSON |
 
 `preview` adds `--open`.
@@ -159,7 +160,9 @@ Options shared by `render` and `preview`:
    delete, stage, commit, toast) with deterministic timing. The browser renderer is a pure function
    of time: `window.__seek(tMs)` draws exactly that frame. No CSS animations are used.
 5. **Render.** A loopback server serves the renderer, scene, and TextMate grammars. Headless
-   Chromium seeks frame by frame, each PNG is piped into ffmpeg, and the result is an H.264 MP4.
+   Chromium seeks frame by frame, and each frame is fingerprinted from the visible state; frames
+   whose state did not change are reused instead of captured again, which keeps holds and
+   inter-keystroke frames cheap. Captures are piped into ffmpeg and the result is an H.264 MP4.
 
 Syntax highlighting uses the TextMate grammars already installed in VS Code (built-ins plus your
 extensions), so languages beyond the common ones work without bundling grammars in this project.

@@ -5,6 +5,7 @@ import { activeDoc } from './state';
 import type { Shell } from './shell';
 import { basename, clamp, fileIconColor, h, icon } from './dom';
 import { fitTopLine } from './viewport';
+import { isCursorVisible } from './signature';
 
 let lastTabsSignature = '';
 let lastBreadcrumbSignature = '';
@@ -241,8 +242,7 @@ export function renderEditor(shell: Shell, state: RenderState, highlighter: High
   const highlighted = highlighter.highlight(doc.path, scope, doc.text);
   const selection = normalizedSelection(doc);
 
-  const cursorAge = state.time - state.lastCursorActivity;
-  const cursorVisible = cursorAge < 450 || Math.floor((cursorAge - 450) / 530) % 2 === 0;
+  const cursorVisible = isCursorVisible(state);
 
   const body = h('div', { className: 'editor-body' });
   const gutter = h('div', { className: 'gutter' });

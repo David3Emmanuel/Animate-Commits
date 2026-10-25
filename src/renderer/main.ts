@@ -11,6 +11,7 @@ import { renderEditor } from './editor';
 import { renderStatusBar } from './statusbar';
 import { renderOverlays } from './overlays';
 import { clamp, hexLuminance } from './dom';
+import { frameSignature } from './signature';
 
 const browserWindow = window as unknown as RendererWindow & { __error?: string };
 const captureMode = new URLSearchParams(window.location.search).get('capture') === '1';
@@ -164,6 +165,7 @@ async function main(): Promise<void> {
   await document.fonts.ready;
 
   const state = createState(scene);
+  let lastSignature = '';
 
   const render = (): void => {
     renderTitlebar(shell, state);
@@ -174,15 +176,25 @@ async function main(): Promise<void> {
     renderOverlays(shell.overlayRoot, state);
   };
 
-  const seekTo = (time: number): void => {
+  const seekTo = (time: number): string => {
     seek(state, clamp(time, 0, scene.durationMs));
-    render();
+    const signature = frameSignature(state, Math.round(shell.editor.clientHeight));
+    if (signature !== lastSignature) {
+      lastSignature = signature;
+      render();
+    }
+    return signature;
   };
 
   browserWindow.__seek = seekTo;
   browserWindow.__duration = scene.durationMs;
   browserWindow.__scene = scene;
   document.title = scene.meta.windowTitle ?? `${scene.meta.repoName} - Visual Studio Code`;
+
+  window.addEventListener('resize', () => {
+    lastSignature = '';
+    seekTo(state.time);
+  });
 
   seekTo(0);
   if (!captureMode) setupControls(scene.durationMs, seekTo);

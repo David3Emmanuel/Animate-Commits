@@ -21,6 +21,7 @@ interface RenderOptions extends SceneCliOptions {
   ffmpeg?: string;
   browserExe?: string;
   dumpScene?: string;
+  captureAll?: boolean;
 }
 
 export function registerRenderCommand(program: Command): void {
@@ -34,6 +35,7 @@ export function registerRenderCommand(program: Command): void {
     .option('--frames <dir>', 'write PNG frames instead of an MP4')
     .option('--ffmpeg <path>', 'path to the ffmpeg executable')
     .option('--browser-exe <path>', 'path to a Chromium-based browser')
+    .option('--capture-all', 'capture every frame even when nothing changed (debugging)')
     .option('--dump-scene <file>', 'write the generated scene JSON for debugging');
   addSceneOptions(command);
 
@@ -82,6 +84,7 @@ export function registerRenderCommand(program: Command): void {
         ...(options.frames ? { framesDir: options.frames } : {}),
         ...(options.browserExe ? { browserExe: options.browserExe } : {}),
         ...(options.ffmpeg ? { ffmpegPath: options.ffmpeg } : {}),
+        dedupe: !options.captureAll,
         signal: controller.signal,
       });
     } finally {
