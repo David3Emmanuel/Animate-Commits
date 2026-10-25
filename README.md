@@ -103,6 +103,7 @@ Options shared by `render` and `preview`:
 | `--title <text>` | derived | Explicit window title |
 | `--no-explorer` | Explorer on | Hide the Explorer and open files via quick open |
 | `--scm` | off | Show the Source Control commit flow |
+| `--merges` | off | Include merge commits (diffed against the first parent) |
 | `--ignore <glob>` | — | Exclude paths from the animation (repeatable) |
 | `--speed <x>` | `1` | Timing multiplier; `2` is twice as fast |
 | `--typing <ms>` | `42` | Base delay per typed character |

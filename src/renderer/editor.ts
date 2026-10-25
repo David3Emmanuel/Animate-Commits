@@ -194,10 +194,17 @@ function renderLine(
   return row;
 }
 
-function minimap(doc: DocState, highlighted: HighlightedLine[] | undefined, lineHeight: number): HTMLElement {
+function minimap(
+  doc: DocState,
+  highlighted: HighlightedLine[] | undefined,
+  lineHeight: number,
+  viewportHeight: number,
+): HTMLElement {
   const container = h('div', { className: 'minimap' });
-  const maxBars = 700;
-  const step = Math.max(1, Math.ceil(doc.lines.length / maxBars));
+  if (doc.lines.length === 0 || viewportHeight <= 0) return container;
+  const barHeight = 2;
+  const maxRows = Math.max(1, Math.floor(viewportHeight / barHeight));
+  const step = Math.max(1, Math.ceil(doc.lines.length / maxRows));
   for (let index = 0; index < doc.lines.length; index += step) {
     const line = doc.lines[index]!;
     if (!line.trim()) continue;
@@ -210,7 +217,7 @@ function minimap(doc: DocState, highlighted: HighlightedLine[] | undefined, line
     bar.style.opacity = '0.55';
     container.append(bar);
   }
-  container.style.height = `${Math.max(1, doc.lines.length) * Math.max(1.5, Math.min(2.5, lineHeight * 0.13))}px`;
+  container.style.height = `${Math.min(viewportHeight, Math.ceil(doc.lines.length / step) * barHeight)}px`;
   return container;
 }
 
@@ -261,7 +268,7 @@ export function renderEditor(shell: Shell, state: RenderState, highlighter: High
   if (meta.minimap) {
     const signature = `${doc.path}:${doc.version}`;
     if (!minimapCache || minimapCache.signature !== signature) {
-      minimapCache = { signature, element: minimap(doc, highlighted, lineHeight) };
+      minimapCache = { signature, element: minimap(doc, highlighted, lineHeight, height) };
     }
     body.append(minimapCache.element);
   } else {

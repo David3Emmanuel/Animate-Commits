@@ -20,6 +20,7 @@ export interface SceneCliOptions {
   title?: string;
   explorer?: boolean;
   scm?: boolean;
+  merges?: boolean;
   maxFileLines?: string;
   maxTabs?: string;
   ignore?: string[];
@@ -45,6 +46,7 @@ export function addSceneOptions(command: Command): Command {
     .option('--title <text>', 'explicit window title')
     .option('--no-explorer', 'hide the Explorer sidebar')
     .option('--scm', 'show the Source Control commit flow')
+    .option('--merges', 'include merge commits (diffed against the first parent)')
     .option('--max-file-lines <n>', 'do not animate files longer than this', '4000')
     .option('--max-tabs <n>', 'maximum open editor tabs', '8')
     .option('--ignore <glob>', 'exclude paths from the animation (repeatable)', collect, [])
@@ -110,6 +112,7 @@ export async function prepareScene(
   const commits = await resolveCommits(repo, {
     ...(options.commit ? { commit: options.commit } : {}),
     ...(options.range ? { range: options.range } : {}),
+    includeMerges: Boolean(options.merges),
   });
   const environment = resolveEnvironment(repo.root, {
     ...(options.vscode ? { vscodePath: options.vscode } : {}),

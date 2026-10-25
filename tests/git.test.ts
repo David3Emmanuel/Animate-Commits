@@ -125,6 +125,42 @@ describe('git history reader', () => {
     expect(splitLines(content!.text)[0]).toBe('# demo');
   });
 
+  it('includes merge commits only when requested', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'animate-commits-merge-'));
+    try {
+      git(dir, 'init', '-b', 'main');
+      git(dir, 'config', 'user.name', 'Merge Tester');
+      git(dir, 'config', 'user.email', 'merge@example.com');
+      git(dir, 'config', 'core.autocrlf', 'false');
+      write(dir, 'base.ts', 'export const base = true;\n');
+      const base = commit(dir, 'Base commit');
+      git(dir, 'checkout', '-b', 'feature');
+      write(dir, 'feature.ts', 'export const feature = true;\n');
+      commit(dir, 'Feature work');
+      git(dir, 'checkout', 'main');
+      write(dir, 'main.ts', 'export const main = true;\n');
+      commit(dir, 'Main work');
+      git(dir, 'merge', '--no-ff', 'feature', '-m', 'Merge feature');
+
+      const repo = await openRepo(dir);
+      const skipped = await resolveCommits(repo, { range: `${base}..HEAD` });
+      expect(skipped.map((entry) => entry.subject)).not.toContain('Merge feature');
+      expect(skipped.map((entry) => entry.subject)).toEqual(
+        expect.arrayContaining(['Feature work', 'Main work']),
+      );
+
+      const included = await resolveCommits(repo, {
+        range: `${base}..HEAD`,
+        includeMerges: true,
+      });
+      const merge = included.find((entry) => entry.subject === 'Merge feature');
+      expect(merge).toBeDefined();
+      expect(merge?.parents).toHaveLength(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   afterAll(() => {
     if (fixture) rmSync(fixture.dir, { recursive: true, force: true });
   });
