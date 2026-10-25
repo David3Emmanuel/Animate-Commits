@@ -14,7 +14,7 @@
     "build": "tsup src/cli.ts --format esm --platform node --target node20 --out-dir dist --clean && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:motion": "tsx tests/render-smoke/run.ts",
+    "test:motion": "pnpm build && tsx tests/render-smoke/run.ts",
     "demo": "tsx scripts/demo.ts"
   },
   "engines": {
