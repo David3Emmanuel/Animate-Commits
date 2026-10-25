@@ -3,7 +3,9 @@
 Animate a git commit — or a range of commits — as if it were being written in VS Code, using your
 current VS Code theme.
 
-![animate-commits showing a commit in the Source Control view](docs/screenshot.png)
+![The renderer commit replayed at 10× while files are typed in VS Code](docs/renderer-commit.gif)
+
+*15-second excerpt from `4a05e3a` — the commit that added the VS Code renderer — replayed at 10×.*
 
 `animate-commits` reads a repository's history, replays each change as real editor activity (opening
 files, typing, deleting, renaming, saving), and renders the result as an MP4 or a scrubbable browser
