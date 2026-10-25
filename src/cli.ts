@@ -3,6 +3,8 @@ import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { runDoctor } from './commands/doctor';
 import { registerThemesCommand } from './commands/themes';
+import { registerRenderCommand } from './commands/render';
+import { registerPreviewCommand } from './commands/preview';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
   version: string;
@@ -26,5 +28,7 @@ program
   });
 
 registerThemesCommand(program);
+registerRenderCommand(program);
+registerPreviewCommand(program);
 
 await program.parseAsync(process.argv);
