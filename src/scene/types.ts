@@ -165,6 +165,13 @@ export interface SaveEvent extends EventBase {
   path: string;
 }
 
+/** Instantly replace a document's contents (used to repair drift and for skipped files). */
+export interface FileContentEvent extends EventBase {
+  type: 'file-content';
+  path: string;
+  text: string;
+}
+
 export interface ScmSetEvent extends EventBase {
   type: 'scm-set';
   entries: ScmEntry[];
@@ -203,6 +210,7 @@ export type SceneEvent =
   | CursorEvent
   | EditEvent
   | SaveEvent
+  | FileContentEvent
   | ScmSetEvent
   | ScmMessageEvent
   | CommitEvent
@@ -215,6 +223,12 @@ export interface Scene {
   events: SceneEvent[];
   durationMs: number;
 }
+
+export type SceneEventInput = SceneEvent extends infer Event
+  ? Event extends SceneEvent
+    ? Omit<Event, 't'>
+    : never
+  : never;
 
 export interface RendererWindow {
   __scene?: Scene;
