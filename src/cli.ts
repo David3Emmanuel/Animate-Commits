@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { runDoctor } from './commands/doctor';
+import { registerThemesCommand } from './commands/themes';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
   version: string;
@@ -23,5 +24,7 @@ program
     const ok = await runDoctor();
     if (!ok) process.exitCode = 1;
   });
+
+registerThemesCommand(program);
 
 await program.parseAsync(process.argv);
